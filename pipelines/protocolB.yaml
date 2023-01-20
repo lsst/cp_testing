@@ -1,0 +1,97 @@
+description: pipeline to handle protocol-B style processing.
+instrument: lsst.obs.lsst.LsstCam
+
+tasks:
+  # Bias generation:
+  cptBiasIsr:
+    class: lsst.cp.testing.CptIsrTask
+    config:
+      expectedExposureType: 'bias'
+      connections.ccdExposure: 'raw'
+      connections.outputExposure: 'cptBiasProc'
+      doWrite: true
+      doBias: false
+      doVariance: true
+      doLinearize: false
+      doCrosstalk: false
+      doBrighterFatter: false
+      doDark: false
+      doFlat: false
+      doApplyGains: false
+      doFringe: false
+  # cptBiasCombine:
+  #   class: lsst.cp.pipe.cpCombine.CalibCombineTask
+  #   config:
+  #     connections.inputExpHandles: 'cptBiasProc'
+  #     connections.outputData: 'cptBias'
+  #     calibrationType: 'bias'
+  #     exposureScaling: "Unity"
+
+#   # Dark generation:
+#   cptDarkIsr:
+#     class: lsst.cp.testing.CptIsrTask
+#     config:
+#       expectedExposureType: 'dark'
+#       connections.ccdExposure: 'raw'
+#       connections.outputExposure: 'cptDarkIsr'
+#       doWrite: true
+#       doBrighterFatter: false
+#       doDark: false
+#       doFlat: false
+#       doApplyGains: false
+#       doFringe: false
+#   cptDark:
+#     class: lsst.cp.pipe.cpDarkTask.CpDarkTask
+#     config:
+#       connections.inputExp: 'cptDarkIsr'
+#       connections.outputExp: 'cptDarkProc'
+#   cptDarkCombine:
+#     class: lsst.cp.pipe.cpCombine.CalibCombineTask
+#     config:
+#       connections.inputExpHandles: 'cptDarkProc'
+#       connections.outputData: 'dark'
+#       calibrationType: 'dark'
+#       exposureScaling: "DarkTime"
+#       python: config.mask.append("CR")
+
+#   # Flat generation:
+#   cptFlatIsr:
+#     class: lsst.cp.testing.CptIsrTask
+#     config:
+#       connections.ccdExposure: 'raw'
+#       connections.outputExposure: 'cptFlatProc'
+#       doWrite: true
+#       doBrighterFatter: false
+#       doFlat: false
+#       doFringe: false
+#       doApplyGains: false
+#   cptFlatMeasure:
+#     class: lsst.cp.pipe.cpFlatNormTask.CpFlatMeasureTask
+#     config:
+#       connections.inputExp: 'cptFlatProc'
+#       connections.outputStats: 'flatStats'
+#   cptFlatNorm:
+#     class: lsst.cp.pipe.cpFlatNormTask.CpFlatNormalizationTask
+#     config:
+#       connections.inputMDs: 'flatStats'
+#       connections.outputScales: 'cptFlatNormScales'
+#   cptFlatCombine:
+#     class: lsst.cp.pipe.cpCombine.CalibCombineByFilterTask
+#     config:
+#       connections.inputExpHandles: 'cptFlatProc'
+#       connections.inputScales: 'cptFlatNormScales'
+#       connections.outputData: 'flat'
+#       calibrationType: 'flat'
+#       exposureScaling: InputList
+#       scalingLevel: AMP
+
+# contracts:
+#   - cptBiasIsr.doBias == False
+#   - cptBiasCombine.calibrationType == "bias"
+#   - cptBiasCombine.exposureScaling == "Unity"
+#   - cptDarkIsr.doDark == False
+#   - cptDarkCombine.calibrationType == "dark"
+#   - cptDarkCombine.exposureScaling == "DarkTime"
+#   - cptFlatIsr.doFlat == False
+#   - cptFlatCombine.calibrationType == "flat"
+
