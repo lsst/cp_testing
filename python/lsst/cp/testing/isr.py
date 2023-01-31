@@ -26,10 +26,9 @@ import lsst.pipe.base as pipeBase
 import lsst.pipe.base.connectionTypes as cT
 
 from lsst.ip.isr import IsrTask, IsrTaskConfig
-from lsst.ip.isr.isrTask import IsrTaskConnections
 
 
-class CptIsrTaskConnections(IsrTaskConnections,
+class CptIsrTaskConnections(pipeBase.PipelineTaskConnections,
                             dimensions=("instrument", "exposure", "detector")):
     ccdExposure = cT.Input(
         name="raw",
@@ -118,13 +117,16 @@ class CptIsrTaskConnections(IsrTaskConnections,
         dimensions=["instrument", "detector"],
         isCalibration=True,
     )
-    defects = cT.Input(
+
+    defects = cT.PrerequisiteInput(
         name='defects',
         doc="Input defect tables.",
         storageClass="Defects",
         dimensions=["instrument", "detector"],
         isCalibration=True,
+        minimum=0,
     )
+
     linearizer = cT.Input(
         name='linearizer',
         storageClass="Linearizer",
@@ -207,7 +209,7 @@ class CptIsrTaskConnections(IsrTaskConnections,
             self.inputs.remove("bfKernel")
             self.inputs.remove("newBFKernel")
         if config.doDefect is not True:
-            self.inputs.remove("defects")
+            self.prerequisiteInputs.remove("defects")
         if config.doDark is not True:
             self.inputs.remove("dark")
         if config.doFlat is not True:
@@ -276,9 +278,12 @@ class CptIsrTask(IsrTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         if self.config.expectedExposureType != "":
-            inputExp = butlerQC.get(inputRefs['ccdExposure'])
+            inputExp = butlerQC.get(inputRefs.ccdExposure)
+            expected = self.config.expectedExposureType.lower()
+            headerValue = inputExp.getMetadata().get('IMGTYPE', 'UNKNOWN').lower()
+            print(f"CZW: {expected} {headerValue}")
 
-            if inputExp.getMetadata().get('IMGTYPE', 'UNKNOWN') != self.config.expectedExposureType:
+            if headerValue != expected:
                 raise pipeBase.NoWorkFound("Input exposure is not requested type.")
 
         super().runQuantum(butlerQC, inputRefs, outputRefs)
