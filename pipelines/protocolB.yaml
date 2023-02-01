@@ -3,6 +3,7 @@ instrument: lsst.obs.lsst.LsstCam
 parameters:
   defects: false
   linearize: false
+  crosstalk: false
 tasks:
   # Bias generation:
   cptBiasIsr:
@@ -16,7 +17,7 @@ tasks:
       doVariance: true
       doLinearize: parameters.linearize
       doDefect: parameters.defects
-      doCrosstalk: false
+      doCrosstalk: parameters.crosstalk
       doBrighterFatter: false
       doDark: false
       doFlat: false
@@ -95,6 +96,136 @@ tasks:
       calibrationType: 'flat'
       exposureScaling: InputList
       scalingLevel: AMP
+
+  #high-value (bright pixels) defects
+  cptBrightDefectIsr:
+    class: lsst.cp.testing.CptIsrTask
+    config:
+      expectedExposureType: 'dark'
+      connections.ccdExposure: 'raw'
+      connections.outputExposure: 'cptBrightDefectsProc'
+      connections.bias: 'cptBias'
+      connections.dark: 'cptDark'
+      connections.flat: 'cptFlat'
+      doWrite: true
+      doOverscan: true
+      doAssembleCcd: true
+      doBias: true
+      doVariance: false
+      doLinearize: parameters.linearize
+      doCrosstalk: parameters.crosstalk
+      doBrighterFatter: false
+      doDark: false
+      doStrayLight: false
+      doFlat: false
+      doFringe: false
+      doApplyGains: false
+      doDefect: parameters.defects
+      doSaturationInterpolation: false
+      growSaturationFootprintSize: 0
+  cptMeasureBrightDefects:
+    class: lsst.cp.pipe.defects.MeasureDefectsTask
+    config:
+      connections.inputExp: 'cptBrightDefectsProc'
+      connections.outputDefects: 'cptPartialBrightDefects'
+  cptMergeBrightDefects:
+    class: lsst.cp.pipe.defects.MergeDefectsTask
+    config:
+      connections.inputDefects: 'cptPartialBrightDefects'
+      connections.mergedDefects: 'cptBrightDefects'
+
+  #low-value (dark pixels) defects
+  cptDefectIsr:
+    class: lsst.cp.testing.CptIsrTask
+    config:
+      expectedExposureType: 'flat'
+      connections.ccdExposure: 'raw'
+      connections.outputExposure: 'cptDefectsProc'
+      connections.bias: 'cptBias'
+      connections.dark: 'cptDark'
+      connections.flat: 'cptFlat'
+      doWrite: true
+      doOverscan: true
+      doAssembleCcd: true
+      doBias: true
+      doVariance: false
+      doLinearize: parameters.linearize
+      doCrosstalk: parameters.crosstalk
+      doBrighterFatter: false
+      doDark: false
+      doStrayLight: false
+      doFlat: false
+      doFringe: false
+      doApplyGains: false
+      doDefect: parameters.defects
+      doSaturationInterpolation: false
+      growSaturationFootprintSize: 0
+  cptMeasureDefects:
+    class: lsst.cp.pipe.defects.MeasureDefectsTask
+    config:
+      connections.inputExp: 'cptDefectsProc'
+      connections.outputDefects: 'cptPartialDefects'
+  cptMergeDefects:
+    class: lsst.cp.pipe.defects.MergeDefectsTask
+    config:
+      connections.inputDefects: 'cptPartialDefects'
+      connections.mergedDefects: 'cptDefects'
+
+  # # PTC:
+  cptPtcIsr:
+    class: lsst.cp.testing.CptIsrTask
+    config:
+      expectedExposureType: 'flat'
+      connections.ccdExposure: 'raw'
+      connections.outputExposure: 'cptPtcProc'
+      connections.bias: 'cptBias'
+      connections.dark: 'cptDark'
+      connections.flat: 'cptFlat'
+      doWrite: true
+      doOverscan: true
+      doAssembleCcd: true
+      doBias: true
+      doVariance: true
+      doLinearize: parameters.linearize
+      doCrosstalk: parameters.crosstalk
+      doBrighterFatter: false
+      doDark: true
+      doStrayLight: false
+      doFlat: false
+      doFringe: false
+      doApplyGains: false
+      doDefect: parameters.defects
+      doNanMasking: true
+      doInterpolate: false
+      doSaturation: false
+      doSaturationInterpolation: false
+      growSaturationFootprintSize: 0
+  cptPtcExtract:
+    class: lsst.cp.pipe.ptc.PhotonTransferCurveExtractTask
+    config:
+      connections.inputExp: 'cptPtcProc'
+      connections.taskMetadata: 'cptPtcIsr_metadata'
+      connections.outputCovariances: 'cptPtcExtract'
+  cptPtcSolve:
+    class: lsst.cp.pipe.ptc.PhotonTransferCurveSolveTask
+    config:
+      connections.inputCovariances: 'cptPtcExtract'
+      connections.outputPtcDataset: 'cptPtc'
+      ptcFitType: EXPAPPROXIMATION
+
+  #linearity
+  cptLinearitySolve:
+    class: lsst.cp.testing.CptLinearitySolveTask
+    config:
+      connections.inputPtc: 'cptPtc'
+      connections.outputLinearizer: 'cptLinearizer'
+
+  #bfk
+  cptBfkSolve:
+    class: lsst.cp.testing.CptBrighterFatterKernelSolveTask
+    config:
+      connections.inputPtc: 'cptPtc'
+      connections.outputBFK: 'cptBfk'
 
 # contracts:
 #   - cptBiasIsr.doBias == False

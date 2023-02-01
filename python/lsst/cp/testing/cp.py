@@ -26,19 +26,40 @@ __all__ = ["CptBrighterFatterKernelSolveTask", "CptBrighterFatterKernelSolveConf
 
 
 import lsst.cp.pipe as cpPipe
+import lsst.pipe.base as pipeBase
 import lsst.pipe.base.connectionTypes as cT
 
-from lsst.cp.pipe.makeBrighterFatterKernel import BrighterFatterKernelSolveConnections
-from lsst.cp.pipe.linearity import LinearitySolveConnections
-from lsst.cp.pipe.pdCorrection import PhotodiodeCorrectionConnections
 
-
-class CptBrighterFatterKernelSolveConnections(BrighterFatterKernelSolveConnections,
-                                              dimensions=("instrument", "exposure", "detector")):
+class CptBrighterFatterKernelSolveConnections(pipeBase.PipelineTaskConnections,
+                                              dimensions=("instrument", "detector")):
+    dummy = cT.Input(
+        name="raw",
+        doc="Dummy exposure.",
+        storageClass='Exposure',
+        dimensions=("instrument", "exposure", "detector"),
+        multiple=True,
+        deferLoad=True,
+    )
+    camera = cT.PrerequisiteInput(
+        name="camera",
+        doc="Camera Geometry definition.",
+        storageClass="Camera",
+        dimensions=("instrument", ),
+        isCalibration=True,
+        lookupFunction=cpPipe._lookupStaticCalibration.lookupStaticCalibration,
+    )
     inputPtc = cT.Input(
-        name="ptc",
-        doc="Photon transfer curve dataset.",
+        name="cptPtc",
+        doc="Input PTC dataset.",
         storageClass="PhotonTransferCurveDataset",
+        dimensions=("instrument", "detector"),
+        isCalibration=True,
+    )
+
+    outputBFK = cT.Output(
+        name="cptBrighterFatterKernel",
+        doc="Output measured brighter-fatter kernel.",
+        storageClass="BrighterFatterKernel",
         dimensions=("instrument", "detector"),
         isCalibration=True,
     )
@@ -57,8 +78,24 @@ class CptBrighterFatterKernelSolveTask(cpPipe.BrighterFatterKernelSolveTask):
     pass
 
 
-class CptLinearitySolveConnections(LinearitySolveConnections,
+class CptLinearitySolveConnections(pipeBase.PipelineTaskConnections,
                                    dimensions=("instrument", "detector")):
+    dummy = cT.Input(
+        name="raw",
+        doc="Dummy exposure.",
+        storageClass='Exposure',
+        dimensions=("instrument", "exposure", "detector"),
+        multiple=True,
+        deferLoad=True,
+    )
+    camera = cT.PrerequisiteInput(
+        name="camera",
+        doc="Camera Geometry definition.",
+        storageClass="Camera",
+        dimensions=("instrument", ),
+        isCalibration=True,
+        lookupFunction=cpPipe._lookupStaticCalibration.lookupStaticCalibration,
+    )
     inputPtc = cT.Input(
         name="ptc",
         doc="Input PTC dataset.",
@@ -66,6 +103,39 @@ class CptLinearitySolveConnections(LinearitySolveConnections,
         dimensions=("instrument", "detector"),
         isCalibration=True,
     )
+    inputPhotodiodeData = cT.PrerequisiteInput(
+        name="photodiode",
+        doc="Photodiode readings data.",
+        storageClass="IsrCalib",
+        dimensions=("instrument", "exposure"),
+        multiple=True,
+        deferLoad=True,
+        minimum=0,
+    )
+    inputPhotodiodeCorrection = cT.Input(
+        name="pdCorrection",
+        doc="Input photodiode correction.",
+        storageClass="IsrCalib",
+        dimensions=("instrument", ),
+        isCalibration=True,
+    )
+
+    outputLinearizer = cT.Output(
+        name="cptLinearity",
+        doc="Output linearity measurements.",
+        storageClass="Linearizer",
+        dimensions=("instrument", "detector"),
+        isCalibration=True,
+    )
+
+    def __init__(self, *, config=None):
+        super().__init__(config=config)
+
+        if config.applyPhotodiodeCorrection is not True:
+            self.inputs.discard("inputPhotodiodeCorrection")
+
+        if config.usePhotodiode is not True:
+            self.inputs.discard("inputPhotodiodeData")
 
 
 class CptLinearitySolveConfig(cpPipe.LinearitySolveConfig,
@@ -81,7 +151,7 @@ class CptLinearitySolveTask(cpPipe.LinearitySolveTask):
     pass
 
 
-class CptPhotodiodeCorrectionConnections(PhotodiodeCorrectionConnections,
+class CptPhotodiodeCorrectionConnections(pipeBase.PipelineTaskConnections,
                                          dimensions=("instrument", "detector")):
     inputPtc = cT.Input(
         name="ptc",
