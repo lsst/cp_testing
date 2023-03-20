@@ -19,7 +19,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__all__ = ["CptBrighterFatterKernelSolveTask", "CptBrighterFatterKernelSolveConfig",
+__all__ = ["CptExtractPtcTask", "CptExtractPtcTaskConfig",
+           "CptBrighterFatterKernelSolveTask", "CptBrighterFatterKernelSolveConfig",
            "CptLinearitySolveTask", "CptLinearitySolveConfig",
            "CptPhotodiodeCorrectionTask", "CptPhotodiodeCorrectionConfig",
            ]
@@ -28,6 +29,22 @@ __all__ = ["CptBrighterFatterKernelSolveTask", "CptBrighterFatterKernelSolveConf
 import lsst.cp.pipe as cpPipe
 import lsst.pipe.base as pipeBase
 import lsst.pipe.base.connectionTypes as cT
+
+
+class CptExtractPtcTaskConnections(cpPipe.ptc.cpExtractPtcTask.PhotonTransferCurveExtractConnections):
+    pass
+
+
+class CptExtractPtcTaskConfig(cpPipe.ptc.PhotonTransferCurveExtractConfig,
+                              pipelineConnections=CptExtractPtcTaskConnections):
+    pass
+
+
+class CptExtractPtcTask(cpPipe.ptc.PhotonTransferCurveExtractTask):
+    configClass = CptExtractPtcTaskConfig
+    _DefaultName = 'cptExtractPtc'
+
+    pass
 
 
 class CptBrighterFatterKernelSolveConnections(pipeBase.PipelineTaskConnections,
