@@ -206,6 +206,7 @@ tasks:
       connections.inputExp: 'cptPtcProc'
       connections.taskMetadata: 'cptPtcIsr_metadata'
       connections.outputCovariances: 'cptPtcExtract'
+      matchExposuresType: "EXPID"
   cptPtcSolve:
     class: lsst.cp.pipe.ptc.PhotonTransferCurveSolveTask
     config:
@@ -219,6 +220,7 @@ tasks:
     config:
       connections.inputPtc: 'cptPtc'
       connections.outputLinearizer: 'cptLinearizer'
+      linearityType: 'Spline'
 
   #bfk
   cptBfkSolve:
@@ -227,6 +229,43 @@ tasks:
       connections.inputPtc: 'cptPtc'
       connections.outputBFK: 'cptBfk'
 
+subsets:
+  # Single calibration subsets.  These may be better run with the
+  # standard cp_pipe pipelines.
+  bias:
+    subset:
+      - cptBiasIsr
+      - cptBiasCombine
+  dark:
+    subset:
+      - cptDarkIsr
+      - cptDark
+      - cptDarkCombine
+  flat:
+    subset:
+      - cptFlatIsr
+      - cptFlatMeasure
+      - cptFlatNorm
+      - cptFlatCombine
+  brightDefects:
+    subset:
+      - cptBrightDefectIsr
+      - cptMeasureBrightDefects
+      - cptMergeBrightDefects
+  defects:
+    subset:
+      - cptDefectIsr
+      - cptMeasureDefects
+      - cptMergeDefects
+  ptc:
+    subset:
+      - cptPtcIsr
+      - cptPtcExtract
+      - cptPtcSolve
+  postPtc:
+    subset:
+      - cptLinearitySolve
+      - cptBfkSolve
 # contracts:
 #   - cptBiasIsr.doBias == False
 #   - cptBiasCombine.calibrationType == "bias"
