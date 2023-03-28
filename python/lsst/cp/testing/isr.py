@@ -265,6 +265,11 @@ class CptIsrTaskConfig(IsrTaskConfig,
         doc="Type of exposures that should be processed.",
         default="",
     )
+    expectedObservationReason = pexConfig.Field(
+        dtype=str,
+        doc="Further restrict processed exposures by observation_reason.",
+        default="",
+    )
 
 
 class CptIsrTask(IsrTask):
@@ -277,13 +282,23 @@ class CptIsrTask(IsrTask):
     _DefaultName = "cptIsrTask"
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
-        if self.config.expectedExposureType != "":
-            inputExp = butlerQC.get(inputRefs.ccdExposure)
-            expected = self.config.expectedExposureType.lower()
-            headerValue = inputExp.getMetadata().get('IMGTYPE', 'UNKNOWN').lower()
-            print(f"CZW: {expected} {headerValue}")
+        inputExpRef = inputRefs.ccdExposure
 
+        if self.config.expectedExposureType != "":
+            doWork = True
+
+            expected = self.config.expectedExposureType.lower()
+            headerValue = inputExpRef.dataId.exposure.observation_type
             if headerValue != expected:
+                doWork = False
+
+            if self.config.expectedObservationReason != "":
+                expected = self.config.expectedObservationReason.lower()
+                headerValue = inputExpRef.dataId.exposure.observation_reason
+                if headerValue != expected:
+                    doWork = False
+
+            if doWork is False:
                 raise pipeBase.NoWorkFound("Input exposure is not requested type.")
 
         super().runQuantum(butlerQC, inputRefs, outputRefs)
