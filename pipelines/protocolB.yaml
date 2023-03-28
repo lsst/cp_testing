@@ -27,7 +27,7 @@ tasks:
     class: lsst.cp.pipe.cpCombine.CalibCombineTask
     config:
       connections.inputExpHandles: 'cptBiasProc'
-      connections.outputData: 'cptBias'
+      connections.outputData: 'bias'
       calibrationType: 'bias'
       exposureScaling: "Unity"
 
@@ -37,7 +37,7 @@ tasks:
     config:
       expectedExposureType: 'dark'
       connections.ccdExposure: 'raw'
-      connections.bias: 'cptBias'
+      connections.bias: 'bias'
       connections.outputExposure: 'cptDarkIsr'
       doWrite: true
       doBrighterFatter: false
@@ -56,7 +56,7 @@ tasks:
     class: lsst.cp.pipe.cpCombine.CalibCombineTask
     config:
       connections.inputExpHandles: 'cptDarkProc'
-      connections.outputData: 'cptDark'
+      connections.outputData: 'dark'
       calibrationType: 'dark'
       exposureScaling: "DarkTime"
       python: config.mask.append("CR")
@@ -67,8 +67,8 @@ tasks:
     config:
       expectedExposureType: 'flat'
       connections.ccdExposure: 'raw'
-      connections.bias: 'cptBias'
-      connections.dark: 'cptDark'
+      connections.bias: 'bias'
+      connections.dark: 'dark'
       connections.outputExposure: 'cptFlatProc'
       doWrite: true
       doBrighterFatter: false
@@ -92,7 +92,7 @@ tasks:
     config:
       connections.inputExpHandles: 'cptFlatProc'
       connections.inputScales: 'cptFlatNormScales'
-      connections.outputData: 'cptFlat'
+      connections.outputData: 'flat'
       calibrationType: 'flat'
       exposureScaling: InputList
       scalingLevel: AMP
@@ -104,9 +104,9 @@ tasks:
       expectedExposureType: 'dark'
       connections.ccdExposure: 'raw'
       connections.outputExposure: 'cptBrightDefectsProc'
-      connections.bias: 'cptBias'
-      connections.dark: 'cptDark'
-      connections.flat: 'cptFlat'
+      connections.bias: 'bias'
+      connections.dark: 'dark'
+      connections.flat: 'flat'
       doWrite: true
       doOverscan: true
       doAssembleCcd: true
@@ -132,7 +132,7 @@ tasks:
     class: lsst.cp.pipe.defects.MergeDefectsTask
     config:
       connections.inputDefects: 'cptPartialBrightDefects'
-      connections.mergedDefects: 'cptBrightDefects'
+      connections.mergedDefects: 'brightDefects'
 
   #low-value (dark pixels) defects
   cptDefectIsr:
@@ -141,9 +141,9 @@ tasks:
       expectedExposureType: 'flat'
       connections.ccdExposure: 'raw'
       connections.outputExposure: 'cptDefectsProc'
-      connections.bias: 'cptBias'
-      connections.dark: 'cptDark'
-      connections.flat: 'cptFlat'
+      connections.bias: 'bias'
+      connections.dark: 'dark'
+      connections.flat: 'flat'
       doWrite: true
       doOverscan: true
       doAssembleCcd: true
@@ -169,7 +169,7 @@ tasks:
     class: lsst.cp.pipe.defects.MergeDefectsTask
     config:
       connections.inputDefects: 'cptPartialDefects'
-      connections.mergedDefects: 'cptDefects'
+      connections.mergedDefects: 'faintDefects'
 
   # # PTC:
   cptPtcIsr:
@@ -178,9 +178,9 @@ tasks:
       expectedExposureType: 'flat'
       connections.ccdExposure: 'raw'
       connections.outputExposure: 'cptPtcProc'
-      connections.bias: 'cptBias'
-      connections.dark: 'cptDark'
-      connections.flat: 'cptFlat'
+      connections.bias: 'bias'
+      connections.dark: 'dark'
+      connections.flat: 'flat'
       doWrite: true
       doOverscan: true
       doAssembleCcd: true
@@ -211,23 +211,23 @@ tasks:
     class: lsst.cp.pipe.ptc.PhotonTransferCurveSolveTask
     config:
       connections.inputCovariances: 'cptPtcExtract'
-      connections.outputPtcDataset: 'cptPtc'
+      connections.outputPtcDataset: 'ptc'
       ptcFitType: EXPAPPROXIMATION
 
   #linearity
   cptLinearitySolve:
     class: lsst.cp.testing.CptLinearitySolveTask
     config:
-      connections.inputPtc: 'cptPtc'
-      connections.outputLinearizer: 'cptLinearizer'
+      connections.inputPtc: 'ptc'
+      connections.outputLinearizer: 'linearizer'
       linearityType: 'Spline'
 
   #bfk
   cptBfkSolve:
     class: lsst.cp.testing.CptBrighterFatterKernelSolveTask
     config:
-      connections.inputPtc: 'cptPtc'
-      connections.outputBFK: 'cptBfk'
+      connections.inputPtc: 'ptc'
+      connections.outputBFK: 'brighterFatterKernel'
 
 subsets:
   # Single calibration subsets.  These may be better run with the
