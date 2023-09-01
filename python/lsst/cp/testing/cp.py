@@ -63,7 +63,6 @@ class CptBrighterFatterKernelSolveConnections(pipeBase.PipelineTaskConnections,
         storageClass="Camera",
         dimensions=("instrument", ),
         isCalibration=True,
-        lookupFunction=cpPipe._lookupStaticCalibration.lookupStaticCalibration,
     )
     inputPtc = cT.Input(
         name="cptPtc",
@@ -111,7 +110,6 @@ class CptLinearitySolveConnections(pipeBase.PipelineTaskConnections,
         storageClass="Camera",
         dimensions=("instrument", ),
         isCalibration=True,
-        lookupFunction=cpPipe._lookupStaticCalibration.lookupStaticCalibration,
     )
     inputPtc = cT.Input(
         name="ptc",

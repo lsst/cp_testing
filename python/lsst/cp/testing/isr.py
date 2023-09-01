@@ -52,7 +52,6 @@ class CptIsrTaskConnections(pipeBase.PipelineTaskConnections,
         isCalibration=True,
     )
     crosstalkSources = cT.Input(
-        # This has had the lookupFunction disabled, and will not function.
         name="isrOverscanCorrected",
         doc="Overscan corrected input images.",
         storageClass="Exposure",
