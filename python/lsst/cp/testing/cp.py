@@ -118,15 +118,6 @@ class CptLinearitySolveConnections(pipeBase.PipelineTaskConnections,
         dimensions=("instrument", "detector"),
         isCalibration=True,
     )
-    inputPhotodiodeData = cT.PrerequisiteInput(
-        name="photodiode",
-        doc="Photodiode readings data.",
-        storageClass="IsrCalib",
-        dimensions=("instrument", "exposure"),
-        multiple=True,
-        deferLoad=True,
-        minimum=0,
-    )
     inputPhotodiodeCorrection = cT.Input(
         name="pdCorrection",
         doc="Input photodiode correction.",
@@ -146,11 +137,8 @@ class CptLinearitySolveConnections(pipeBase.PipelineTaskConnections,
     def __init__(self, *, config=None):
         super().__init__(config=config)
 
-        if config.applyPhotodiodeCorrection is not True:
-            self.inputs.discard("inputPhotodiodeCorrection")
-
-        if config.usePhotodiode is not True:
-            self.inputs.discard("inputPhotodiodeData")
+        if not config.applyPhotodiodeCorrection:
+            del self.inputPhotodiodeCorrection
 
 
 class CptLinearitySolveConfig(cpPipe.LinearitySolveConfig,

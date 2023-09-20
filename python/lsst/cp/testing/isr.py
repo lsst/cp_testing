@@ -117,13 +117,12 @@ class CptIsrTaskConnections(pipeBase.PipelineTaskConnections,
         isCalibration=True,
     )
 
-    defects = cT.PrerequisiteInput(
+    defects = cT.Input(
         name='defects',
         doc="Input defect tables.",
         storageClass="Defects",
         dimensions=["instrument", "detector"],
         isCalibration=True,
-        minimum=0,
     )
 
     linearizer = cT.Input(
@@ -197,59 +196,59 @@ class CptIsrTaskConnections(pipeBase.PipelineTaskConnections,
     def __init__(self, *, config=None):
         super().__init__(config=config)
 
-        if config.doBias is not True:
-            self.inputs.remove("bias")
-        if config.doLinearize is not True:
-            self.inputs.remove("linearizer")
-        if config.doCrosstalk is not True:
-            self.inputs.remove("crosstalkSources")
-            self.inputs.remove("crosstalk")
-        if config.doBrighterFatter is not True:
-            self.inputs.remove("bfKernel")
-            self.inputs.remove("newBFKernel")
-        if config.doDefect is not True:
-            self.prerequisiteInputs.remove("defects")
-        if config.doDark is not True:
-            self.inputs.remove("dark")
-        if config.doFlat is not True:
-            self.inputs.remove("flat")
-        if config.doFringe is not True:
-            self.inputs.remove("fringes")
-        if config.doStrayLight is not True:
-            self.inputs.remove("strayLightData")
-        if config.usePtcGains is not True and config.usePtcReadNoise is not True:
-            self.inputs.remove("ptc")
-        if config.doAttachTransmissionCurve is not True:
-            self.inputs.remove("opticsTransmission")
-            self.inputs.remove("filterTransmission")
-            self.inputs.remove("sensorTransmission")
-            self.inputs.remove("atmosphereTransmission")
+        if not config.doBias:
+            del self.bias
+        if not config.doLinearize:
+            del self.linearizer
+        if not config.doCrosstalk:
+            del self.crosstalkSources
+            del self.crosstalk
+        if not config.doBrighterFatter:
+            del self.bfKernel
+            del self.newBFKernel
+        if not config.doDefect:
+            del self.defects
+        if not config.doDark:
+            del self.dark
+        if not config.doFlat:
+            del self.flat
+        if not config.doFringe:
+            del self.fringes
+        if not config.doStrayLight:
+            del self.strayLightData
+        if not config.usePtcGains and not config.usePtcReadNoise:
+            del self.ptc
+        if not config.doAttachTransmissionCurve:
+            del self.opticsTransmission
+            del self.filterTransmission
+            del self.sensorTransmission
+            del self.atmosphereTransmission
         else:
-            if config.doUseOpticsTransmission is not True:
-                self.inputs.remove("opticsTransmission")
-            if config.doUseFilterTransmission is not True:
-                self.inputs.remove("filterTransmission")
-            if config.doUseSensorTransmission is not True:
-                self.inputs.remove("sensorTransmission")
-            if config.doUseAtmosphereTransmission is not True:
-                self.inputs.remove("atmosphereTransmission")
-        if config.doIlluminationCorrection is not True:
-            self.inputs.remove("illumMaskedImage")
+            if not config.doUseOpticsTransmission:
+                del self.opticsTransmission
+            if not config.doUseFilterTransmission:
+                del self.filterTransmission
+            if not config.doUseSensorTransmission:
+                del self.sensorTransmission
+            if not config.doUseAtmosphereTransmission:
+                del self.atmosphereTransmission
+        if not config.doIlluminationCorrection:
+            del self.illumMaskedImage
 
-        if config.doWrite is not True:
-            self.outputs.remove("outputExposure")
-            self.outputs.remove("preInterpExposure")
-            self.outputs.remove("outputFlattenedThumbnail")
-            self.outputs.remove("outputOssThumbnail")
-        if config.doSaveInterpPixels is not True:
+        if not config.doWrite:
+            del self.outputExposure
+            del self.preInterpExposure
+            del self.outputFlattenedThumbnail
+            del self.outputOssThumbnail
+        if not config.doSaveInterpPixels:
             if "preInterpExposure" in self.outputs:
-                self.outputs.remove("preInterpExposure")
-        if config.qa.doThumbnailOss is not True:
+                del self.preInterpExposure
+        if not config.qa.doThumbnailOss:
             if "outputOssThumbnail" in self.outputs:
-                self.outputs.remove("outputOssThumbnail")
-        if config.qa.doThumbnailFlattened is not True:
+                del self.outputOssThumbnail
+        if not config.qa.doThumbnailFlattened:
             if "outputFlattenedThumbnail" in self.outputs:
-                self.outputs.remove("outputFlattenedThumbnail")
+                del self.outputFlattenedThumbnail
 
 
 class CptIsrTaskConfig(IsrTaskConfig,
@@ -297,7 +296,7 @@ class CptIsrTask(IsrTask):
                 if headerValue != expected:
                     doWork = False
 
-            if doWork is False:
+            if not doWork:
                 raise pipeBase.NoWorkFound("Input exposure is not requested type.")
 
         super().runQuantum(butlerQC, inputRefs, outputRefs)

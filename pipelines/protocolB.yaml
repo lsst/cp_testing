@@ -1,4 +1,4 @@
-description: pipeline to handle protocol-B style processing.
+description: Pipeline to enable LSSTCam standard protocol-B style processing.
 instrument: lsst.obs.lsst.LsstCam
 parameters:
   defects: false
@@ -97,81 +97,29 @@ tasks:
       exposureScaling: InputList
       scalingLevel: AMP
 
-  #high-value (bright pixels) defects
-  cptBrightDefectIsr:
-    class: lsst.cp.testing.CptIsrTask
-    config:
-      expectedExposureType: 'dark'
-      connections.ccdExposure: 'raw'
-      connections.outputExposure: 'cptBrightDefectsProc'
-      connections.bias: 'bias'
-      connections.dark: 'dark'
-      connections.flat: 'flat'
-      doWrite: true
-      doOverscan: true
-      doAssembleCcd: true
-      doBias: true
-      doVariance: false
-      doLinearize: parameters.linearize
-      doCrosstalk: parameters.crosstalk
-      doBrighterFatter: false
-      doDark: false
-      doStrayLight: false
-      doFlat: false
-      doFringe: false
-      doApplyGains: false
-      doDefect: parameters.defects
-      doSaturationInterpolation: false
-      growSaturationFootprintSize: 0
+  # high-value (bright pixels) defects
   cptMeasureBrightDefects:
-    class: lsst.cp.pipe.defects.MeasureDefectsTask
+    class: lsst.cp.pipe.defects.MeasureDefectsCombinedTask
     config:
-      connections.inputExp: 'cptBrightDefectsProc'
-      connections.outputDefects: 'cptPartialBrightDefects'
-  cptMergeBrightDefects:
-    class: lsst.cp.pipe.defects.MergeDefectsTask
+      connections.inputExp: 'dark'
+      connections.outputDefects: 'cptBrightDefectsFromDark'
+      darkCurrentThreshold: 3.0
+  # low-value (faint pixels) defects
+  cptMeasureFaintDefects:
+    class: lsst.cp.pipe.defects.MeasureDefectsCombinedWithFilterTask
     config:
-      connections.inputDefects: 'cptPartialBrightDefects'
-      connections.mergedDefects: 'brightDefects'
-
-  #low-value (dark pixels) defects
-  cptDefectIsr:
-    class: lsst.cp.testing.CptIsrTask
-    config:
-      expectedExposureType: 'flat'
-      connections.ccdExposure: 'raw'
-      connections.outputExposure: 'cptDefectsProc'
-      connections.bias: 'bias'
-      connections.dark: 'dark'
-      connections.flat: 'flat'
-      doWrite: true
-      doOverscan: true
-      doAssembleCcd: true
-      doBias: true
-      doVariance: false
-      doLinearize: parameters.linearize
-      doCrosstalk: parameters.crosstalk
-      doBrighterFatter: false
-      doDark: false
-      doStrayLight: false
-      doFlat: false
-      doFringe: false
-      doApplyGains: false
-      doDefect: parameters.defects
-      doSaturationInterpolation: false
-      growSaturationFootprintSize: 0
-  cptMeasureDefects:
-    class: lsst.cp.pipe.defects.MeasureDefectsTask
-    config:
-      connections.inputExp: 'cptDefectsProc'
-      connections.outputDefects: 'cptPartialDefects'
+      connections.inputExp: 'flat'
+      connections.outputDefects: 'cptFaintDefectsFromFlat'
+      fracThresholdFlat: 0.9
   cptMergeDefects:
-    class: lsst.cp.pipe.defects.MergeDefectsTask
-    config:
-      connections.inputDefects: 'cptPartialDefects'
-      connections.mergedDefects: 'faintDefects'
+      class: lsst.cp.pipe.defects.MergeDefectsCombinedTask
+      config:
+        connections.inputFlatDefects: 'cptFaintDefectsFromFlat'
+        connections.inputDarkDefects: 'cptBrightDefectsFromDark'
+        connections.mergedDefects: 'defects'
+        combinationMode: 'OR'
 
-  # # PTC:
+  # PTC:
   cptPtcIsr:
     class: lsst.cp.testing.CptIsrTask
     config:
@@ -214,7 +162,7 @@ tasks:
       connections.outputPtcDataset: 'ptc'
       ptcFitType: EXPAPPROXIMATION
 
-  #linearity
+  # linearity
   cptLinearitySolve:
     class: lsst.cp.testing.CptLinearitySolveTask
     config:
@@ -222,7 +170,7 @@ tasks:
       connections.outputLinearizer: 'linearizer'
       linearityType: 'Spline'
 
-  #bfk
+  # bfk
   cptBfkSolve:
     class: lsst.cp.testing.CptBrighterFatterKernelSolveTask
     config:
@@ -249,13 +197,14 @@ subsets:
       - cptFlatCombine
   brightDefects:
     subset:
-      - cptBrightDefectIsr
       - cptMeasureBrightDefects
-      - cptMergeBrightDefects
+  faintDefects:
+    subset:
+      - cptMeasureFaintDefects
   defects:
     subset:
-      - cptDefectIsr
-      - cptMeasureDefects
+      - cptMeasureBrightDefects
+      - cptMeasureFaintDefects
       - cptMergeDefects
   ptc:
     subset:
@@ -266,13 +215,13 @@ subsets:
     subset:
       - cptLinearitySolve
       - cptBfkSolve
-# contracts:
-#   - cptBiasIsr.doBias == False
-#   - cptBiasCombine.calibrationType == "bias"
-#   - cptBiasCombine.exposureScaling == "Unity"
-#   - cptDarkIsr.doDark == False
-#   - cptDarkCombine.calibrationType == "dark"
-#   - cptDarkCombine.exposureScaling == "DarkTime"
-#   - cptFlatIsr.doFlat == False
-#   - cptFlatCombine.calibrationType == "flat"
+contracts:
+  - cptBiasIsr.doBias == False
+  - cptBiasCombine.calibrationType == "bias"
+  - cptBiasCombine.exposureScaling == "Unity"
+  - cptDarkIsr.doDark == False
+  - cptDarkCombine.calibrationType == "dark"
+  - cptDarkCombine.exposureScaling == "DarkTime"
+  - cptFlatIsr.doFlat == False
+  - cptFlatCombine.calibrationType == "flat"
 
