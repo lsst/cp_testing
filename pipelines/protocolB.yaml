@@ -169,6 +169,7 @@ tasks:
       connections.inputPtc: 'ptc'
       connections.outputLinearizer: 'linearizer'
       linearityType: 'Spline'
+      usePhotodiode: true
 
   # bfk
   cptBfkSolve:
