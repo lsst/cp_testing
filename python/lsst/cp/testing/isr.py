@@ -250,6 +250,53 @@ class CptIsrTaskConnections(pipeBase.PipelineTaskConnections,
             if "outputFlattenedThumbnail" in self.outputs:
                 del self.outputFlattenedThumbnail
 
+    def adjustQuantum(self, inputs, outputs, label, data_id):
+        """Adjust quantum to drop task execution depending on the input data.
+
+        Parameters
+        ----------
+        inputs : `dict`
+            Dictionary of input connections.
+        outputs : `Mapping`
+            Mapping of output datasets.
+        label : `str`
+            Task label.
+        data_id : `lsst.daf.butler.DataCoordinate`
+            Data id for this task execution.
+
+        Returns
+        -------
+        adjustedInputs : `Mapping`
+            Adjusted set of inputs.
+        adjustedOutputs : `Mapping`
+            Adjusted set of outputs.
+
+        Raises
+        ------
+        NoWorkFound
+            Raised if the task execution should be skipped.
+        """
+        inputConnection, inputExpRefs = inputs['ccdExposure']
+        inputExpRef = inputExpRefs[0]
+        doWork = True
+
+        if self.config.expectedExposureType != "":
+            expected = self.config.expectedExposureType.lower()
+            observationType = inputExpRef.dataId.exposure.observation_type
+            if observationType != expected:
+                doWork = False
+
+        if self.config.expectedObservationReason != "":
+            expected = self.config.expectedObservationReason.lower()
+            observationReason = inputExpRef.dataId.exposure.observation_reason
+            if observationReason != expected:
+                doWork = False
+
+        if not doWork:
+            raise pipeBase.NoWorkFound("Input exposure is not requested type.")
+        else:
+            return super().adjustQuantum(inputs, outputs, label, data_id)
+
 
 class CptIsrTaskConfig(IsrTaskConfig,
                        pipelineConnections=CptIsrTaskConnections):
@@ -279,24 +326,4 @@ class CptIsrTask(IsrTask):
     ConfigClass = CptIsrTaskConfig
     _DefaultName = "cptIsrTask"
 
-    def runQuantum(self, butlerQC, inputRefs, outputRefs):
-        inputExpRef = inputRefs.ccdExposure
-
-        if self.config.expectedExposureType != "":
-            doWork = True
-
-            expected = self.config.expectedExposureType.lower()
-            headerValue = inputExpRef.dataId.exposure.observation_type
-            if headerValue != expected:
-                doWork = False
-
-            if self.config.expectedObservationReason != "":
-                expected = self.config.expectedObservationReason.lower()
-                headerValue = inputExpRef.dataId.exposure.observation_reason
-                if headerValue != expected:
-                    doWork = False
-
-            if not doWork:
-                raise pipeBase.NoWorkFound("Input exposure is not requested type.")
-
-        super().runQuantum(butlerQC, inputRefs, outputRefs)
+    pass
