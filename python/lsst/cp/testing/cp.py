@@ -31,16 +31,16 @@ import lsst.pipe.base as pipeBase
 import lsst.pipe.base.connectionTypes as cT
 
 
-class CptExtractPtcTaskConnections(cpPipe.ptc.cpExtractPtcTask.PhotonTransferCurveExtractConnections):
+class CptExtractPtcTaskConnections(cpPipe.ptc.cpPtcExtract.PhotonTransferCurveExtractConnections):
     pass
 
 
-class CptExtractPtcTaskConfig(cpPipe.ptc.PhotonTransferCurveExtractConfig,
+class CptExtractPtcTaskConfig(cpPipe.PhotonTransferCurveExtractConfig,
                               pipelineConnections=CptExtractPtcTaskConnections):
     pass
 
 
-class CptExtractPtcTask(cpPipe.ptc.PhotonTransferCurveExtractTask):
+class CptExtractPtcTask(cpPipe.PhotonTransferCurveExtractTask):
     configClass = CptExtractPtcTaskConfig
     _DefaultName = 'cptExtractPtc'
 
