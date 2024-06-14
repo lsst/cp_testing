@@ -5,6 +5,7 @@
 setupRequired(base)
 setupRequired(ip_isr)
 setupRequired(cp_pipe)
+setupOptional(obs_lsst)
 
 # The following is boilerplate for all packages.
 # See https://dmtn-001.lsst.io for details on LSST_LIBRARY_PATH.

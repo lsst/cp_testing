@@ -9,9 +9,9 @@ tasks:
   cptBiasIsr:
     class: lsst.cp.testing.CptIsrTask
     config:
-      expectedExposureType: 'bias'
-      connections.ccdExposure: 'raw'
-      connections.outputExposure: 'cptBiasProc'
+      expectedExposureType: "bias"
+      connections.ccdExposure: "raw"
+      connections.outputExposure: "cptBiasIsrExp"
       doWrite: true
       doBias: false
       doVariance: true
@@ -24,21 +24,21 @@ tasks:
       doApplyGains: false
       doFringe: false
   cptBiasCombine:
-    class: lsst.cp.pipe.cpCombine.CalibCombineTask
+    class: lsst.cp.pipe.CalibCombineTask
     config:
-      connections.inputExpHandles: 'cptBiasProc'
-      connections.outputData: 'bias'
-      calibrationType: 'bias'
+      connections.inputExpHandles: "cptBiasIsrExp"
+      connections.outputData: "bias"
+      calibrationType: "bias"
       exposureScaling: "Unity"
 
   # Dark generation:
   cptDarkIsr:
     class: lsst.cp.testing.CptIsrTask
     config:
-      expectedExposureType: 'dark'
-      connections.ccdExposure: 'raw'
-      connections.bias: 'bias'
-      connections.outputExposure: 'cptDarkIsr'
+      expectedExposureType: "dark"
+      connections.ccdExposure: "raw"
+      connections.bias: "bias"
+      connections.outputExposure: "cptDarkIsrExp"
       doWrite: true
       doBrighterFatter: false
       doDark: false
@@ -48,16 +48,16 @@ tasks:
       doLinearize: parameters.linearize
       doDefect: parameters.defects
   cptDark:
-    class: lsst.cp.pipe.cpDarkTask.CpDarkTask
+    class: lsst.cp.pipe.CpDarkTask
     config:
-      connections.inputExp: 'cptDarkIsr'
-      connections.outputExp: 'cptDarkProc'
+      connections.inputExp: "cptDarkIsrExp"
+      connections.outputExp: "cptDarkRemoveCRIsrExp"
   cptDarkCombine:
-    class: lsst.cp.pipe.cpCombine.CalibCombineTask
+    class: lsst.cp.pipe.CalibCombineTask
     config:
-      connections.inputExpHandles: 'cptDarkProc'
-      connections.outputData: 'dark'
-      calibrationType: 'dark'
+      connections.inputExpHandles: "cptDarkRemoveCRIsrExp"
+      connections.outputData: "dark"
+      calibrationType: "dark"
       exposureScaling: "DarkTime"
       python: config.mask.append("CR")
 
@@ -65,11 +65,11 @@ tasks:
   cptFlatIsr:
     class: lsst.cp.testing.CptIsrTask
     config:
-      expectedExposureType: 'flat'
-      connections.ccdExposure: 'raw'
-      connections.bias: 'bias'
-      connections.dark: 'dark'
-      connections.outputExposure: 'cptFlatProc'
+      expectedExposureType: "flat"
+      connections.ccdExposure: "raw"
+      connections.bias: "bias"
+      connections.dark: "dark"
+      connections.outputExposure: "cptFlatIsrExp"
       doWrite: true
       doBrighterFatter: false
       doFlat: false
@@ -78,57 +78,57 @@ tasks:
       doLinearize: parameters.linearize
       doDefect: parameters.defects
   cptFlatMeasure:
-    class: lsst.cp.pipe.cpFlatNormTask.CpFlatMeasureTask
+    class: lsst.cp.pipe.CpFlatMeasureTask
     config:
-      connections.inputExp: 'cptFlatProc'
-      connections.outputStats: 'cptFlatStats'
+      connections.inputExp: "cptFlatIsrExp"
+      connections.outputStats: "cptFlatStatistics"
   cptFlatNorm:
-    class: lsst.cp.pipe.cpFlatNormTask.CpFlatNormalizationTask
+    class: lsst.cp.pipe.CpFlatNormalizationTask
     config:
-      connections.inputMDs: 'cptFlatStats'
-      connections.outputScales: 'cptFlatNormScales'
+      connections.inputMDs: "cptFlatStatistics"
+      connections.outputScales: "cptFlatNormalizeScales"
   cptFlatCombine:
-    class: lsst.cp.pipe.cpCombine.CalibCombineByFilterTask
+    class: lsst.cp.pipe.CalibCombineByFilterTask
     config:
-      connections.inputExpHandles: 'cptFlatProc'
-      connections.inputScales: 'cptFlatNormScales'
-      connections.outputData: 'flat'
-      calibrationType: 'flat'
+      connections.inputExpHandles: "cptFlatIsrExp"
+      connections.inputScales: "cptFlatNormalizeScales"
+      connections.outputData: "flat"
+      calibrationType: "flat"
       exposureScaling: InputList
       scalingLevel: AMP
 
   # high-value (bright pixels) defects
   cptMeasureBrightDefects:
-    class: lsst.cp.pipe.defects.MeasureDefectsCombinedTask
+    class: lsst.cp.pipe.MeasureDefectsCombinedTask
     config:
-      connections.inputExp: 'dark'
-      connections.outputDefects: 'cptBrightDefectsFromDark'
+      connections.inputExp: "dark"
+      connections.outputDefects: "cptBrightDefectsFromDark"
       darkCurrentThreshold: 3.0
   # low-value (faint pixels) defects
   cptMeasureFaintDefects:
-    class: lsst.cp.pipe.defects.MeasureDefectsCombinedWithFilterTask
+    class: lsst.cp.pipe.MeasureDefectsCombinedWithFilterTask
     config:
-      connections.inputExp: 'flat'
-      connections.outputDefects: 'cptFaintDefectsFromFlat'
+      connections.inputExp: "flat"
+      connections.outputDefects: "cptFaintDefectsFromFlat"
       fracThresholdFlat: 0.9
   cptMergeDefects:
-      class: lsst.cp.pipe.defects.MergeDefectsCombinedTask
+      class: lsst.cp.pipe.MergeDefectsCombinedTask
       config:
-        connections.inputFlatDefects: 'cptFaintDefectsFromFlat'
-        connections.inputDarkDefects: 'cptBrightDefectsFromDark'
-        connections.mergedDefects: 'defects'
-        combinationMode: 'OR'
+        connections.inputFlatDefects: "cptFaintDefectsFromFlat"
+        connections.inputDarkDefects: "cptBrightDefectsFromDark"
+        connections.mergedDefects: "defects"
+        combinationMode: "OR"
 
   # PTC:
   cptPtcIsr:
     class: lsst.cp.testing.CptIsrTask
     config:
-      expectedExposureType: 'flat'
-      connections.ccdExposure: 'raw'
-      connections.outputExposure: 'cptPtcProc'
-      connections.bias: 'bias'
-      connections.dark: 'dark'
-      connections.flat: 'flat'
+      expectedExposureType: "flat"
+      connections.ccdExposure: "raw"
+      connections.outputExposure: "cptPtcIsrExp"
+      connections.bias: "bias"
+      connections.dark: "dark"
+      connections.flat: "flat"
       doWrite: true
       doOverscan: true
       doAssembleCcd: true
@@ -149,34 +149,34 @@ tasks:
       doSaturationInterpolation: false
       growSaturationFootprintSize: 0
   cptPtcExtract:
-    class: lsst.cp.pipe.ptc.PhotonTransferCurveExtractTask
+    class: lsst.cp.pipe.PhotonTransferCurveExtractTask
     config:
-      connections.inputExp: 'cptPtcProc'
-      connections.taskMetadata: 'cptPtcIsr_metadata'
-      connections.outputCovariances: 'cptPtcExtract'
+      connections.inputExp: "cptPtcIsrExp"
+      connections.taskMetadata: "cptPtcIsr_metadata"
+      connections.outputCovariances: "cptPtcPartial"
       matchExposuresType: "EXPID"
   cptPtcSolve:
-    class: lsst.cp.pipe.ptc.PhotonTransferCurveSolveTask
+    class: lsst.cp.pipe.PhotonTransferCurveSolveTask
     config:
-      connections.inputCovariances: 'cptPtcExtract'
-      connections.outputPtcDataset: 'ptc'
+      connections.inputCovariances: "cptPtcPartial"
+      connections.outputPtcDataset: "ptc"
       ptcFitType: EXPAPPROXIMATION
 
   # linearity
   cptLinearitySolve:
     class: lsst.cp.testing.CptLinearitySolveTask
     config:
-      connections.inputPtc: 'ptc'
-      connections.outputLinearizer: 'linearizer'
-      linearityType: 'Spline'
+      connections.inputPtc: "ptc"
+      connections.outputLinearizer: "linearizer"
+      linearityType: "Spline"
       usePhotodiode: true
 
   # bfk
   cptBfkSolve:
     class: lsst.cp.testing.CptBrighterFatterKernelSolveTask
     config:
-      connections.inputPtc: 'ptc'
-      connections.outputBFK: 'brighterFatterKernel'
+      connections.inputPtc: "ptc"
+      connections.outputBFK: "brighterFatterKernel"
 
 subsets:
   # Single calibration subsets.  These may be better run with the
